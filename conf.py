@@ -36,7 +36,7 @@ def get_parser():
     parser.add_argument('--show-tracked-files', '-f', action="store_true")
     parser.add_argument('--edit-file', '-e', nargs=argparse.REMAINDER)
     parser.add_argument('--apply-changes', '-a', action='store_true')
-    parser.add_argument('--install', nargs='?', const="config")
+    parser.add_argument('--install', nargs=1)
     parser.add_argument('--clone-and-checkout', '-c', nargs=1)
     parser.add_argument('--dev-test', action="store_true")
     return parser
@@ -46,7 +46,10 @@ def conf():
     parser = get_parser()
     args = vars(parser.parse_args())
     if args['install']:
-        add_to_path(args['install'][0])
+        print("Here ", args['install'])
+        if "list" in str(type(args['install'])):
+            args['install'] = args['install'][0]
+        add_to_path(args['install'])
     if args['info']:
         get_info()
     if args['init']:
