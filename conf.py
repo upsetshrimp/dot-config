@@ -66,7 +66,8 @@ def conf():
         if args['apply_changes']:
             print("TODO")
     if args["dev_test"]:
-        backup_old_files(get_clashing_files())
+        # Only here for testing new functions quickly
+        print("This does nothing... if you want it to, edit this code here")
     if args["clone_and_checkout"]:
         git_url = args["clone_and_checkout"][0]
         clone_repo(git_url)
