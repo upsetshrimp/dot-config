@@ -46,7 +46,6 @@ def conf():
     parser = get_parser()
     args = vars(parser.parse_args())
     if args['install']:
-        print("Here ", args['install'])
         if "list" in str(type(args['install'])):
             args['install'] = args['install'][0]
         add_to_path(args['install'])
