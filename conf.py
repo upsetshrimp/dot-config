@@ -36,7 +36,7 @@ def get_parser():
     parser.add_argument('--show-tracked-files', '-f', action="store_true")
     parser.add_argument('--edit-file', '-e', nargs=argparse.REMAINDER)
     parser.add_argument('--apply-changes', '-a', action='store_true')
-    parser.add_argument('--install', action='store_true')
+    parser.add_argument('--install', nargs='?', const="config")
     parser.add_argument('--clone-and-checkout', '-c', nargs=1)
     parser.add_argument('--dev-test', action="store_true")
     return parser
@@ -46,7 +46,7 @@ def conf():
     parser = get_parser()
     args = vars(parser.parse_args())
     if args['install']:
-        add_to_path()
+        add_to_path(args['install'][0])
     if args['info']:
         get_info()
     if args['init']:
@@ -80,8 +80,9 @@ def checkout():
         get_clashing_files()
 
 
-def add_to_path():
-    shell_func_raw = f"conf(){lcb}\n    python {SCRIPT_PATH} \"$@\"\n{rcb}\n"
+def add_to_path(name):
+    print(f"Adding {name}() function to shell startup")
+    shell_func_raw = f"{name}(){lcb}\n    python {SCRIPT_PATH} \"$@\"\n{rcb}\n"
     supported_shells = ['zsh', 'bash', 'csh', 'ksh']
     supported = False
     for shell in supported_shells:
@@ -102,6 +103,7 @@ def add_to_path():
     f = open(rc_file, "a")
     f.write(shell_func_raw)
     f.close()
+    print(divider)
 
 
 def print_tracked_files():
