@@ -199,11 +199,11 @@ def delete_files(files: list):
 def setup_bare_repo() -> str:
     init = ['/usr/bin/git', 'init', '--bare', REPO]
     print("Setting up...")
-    if len(os.listdir(REPO)) != 0:
+    if os.path.exists(REPO):
         delete_files([REPO])
     git_init = git_interface_call(init, use_prefix=False)
     git_settings_change()
-    return git_init.decode('utf-8')
+    return git_init
 
 
 def git_settings_change():
