@@ -1,27 +1,46 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import argparse
 import subprocess
 import os
+import sys
 import time
 from subprocess import PIPE
 from shutil import copy
 from random import randint
-"""
-TODO:
 
-*!*
-clean up messy function roles, can probably get rid of a couple
- of functions (or make more)
-"""
+# TODO:
+#
+# *!*
+# clean up messy function roles, can probably get rid of a couple
+# of functions (or make more)
+
+
 HOME = os.path.expanduser("~")
 REPO = f'{HOME}/.cfg/'
 EDITOR = os.environ['EDITOR']
 SHELL = os.environ['SHELL']
 SCRIPT_PATH = os.path.realpath(__file__)
 BACKUP_PATH = f"{HOME}/old_dotfiles_backup"
-lcb = '\u007b'              # {
-rcb = '\u007d'              # }
-divider = "----------------------------"
+LCB = '\u007b'              # {
+RCB = '\u007d'              # }
+DIVIDER = "----------------------------"
+ENCODING = "utf-8"
+
+
+def find_variants():
+    """
+    comb through monolith dotfile and find optional bits
+    optional bits will be comments that will later be uncommented per request
+    """
+    print("TODO")
+
+
+def create_branch(changes: dict):
+    """
+    input: selections of what to merge from files
+    output: branch named HOSTNAME with the changes on file
+    """
+    print("TODO", changes)
 
 
 def restore_backup(url):
@@ -63,7 +82,7 @@ def conf():
         print(git_cmd)
     if args['show_tracked_files']:
         print_tracked_files()
-        exit()
+        sys.exit()
     if args['edit_file']:
         files = find_files(args['edit_file'][0])
         file_choice = option_picker(files)
@@ -90,7 +109,7 @@ def checkout():
 
 def add_to_path(name):
     print(f"Adding {name}() function to shell startup")
-    shell_func_raw = f"{name}(){lcb}\n    python {SCRIPT_PATH} \"$@\"\n{rcb}\n"
+    shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
     supported_shells = ['zsh', 'bash', 'csh', 'ksh']
     supported = False
     for shell in supported_shells:
@@ -108,10 +127,10 @@ def add_to_path(name):
             print("Aborting...")
             exit()
     print(f"Adding to {rc_file}")
-    f = open(rc_file, "a")
+    f = open(rc_file, "a", )
     f.write(shell_func_raw)
     f.close()
-    print(divider)
+    print(DIVIDER)
 
 
 def print_tracked_files():
@@ -119,7 +138,7 @@ def print_tracked_files():
     print(f"{len(files)} files tracked:\n")
     for file in files:
         print(file)
-    print(divider)
+    print(DIVIDER)
 
 
 def open_editor(file_path, editor=EDITOR) -> None:
@@ -160,7 +179,7 @@ def option_picker(opts: dict):
     print("Multipile options found, which one to edit?")
     for key in opts.keys():
         print(f'{key} : {opts[key]}')
-    print(divider)
+    print(DIVIDER)
     choice = input("Pick an option (default=0): ") or 0
     while int(choice) not in opts:
         print(f"Invalid choice ({choice}), please try again")
@@ -176,7 +195,7 @@ def get_info():
     print(f"conf installed at {SCRIPT_PATH}\n")
     print_tracked_files()
     print(status)
-    print(divider)
+    print(DIVIDER)
     print(f"Available Branches:\n{branches}")
 
 
@@ -216,14 +235,14 @@ def git_settings_change():
     set_untracked = ['config', '--local', 'status.showUntrackedFiles', 'no']
     untracked = git_interface_call(set_untracked)
     try:
-        f = open(f'{REPO}.gitignore', "a")
+        f = open(f'{REPO}.gitignore', "a", ENCODING)
         f.write(".cfg\n")
         f.close()
     except Exception as e:
         print("Couldn't add to gitignore... aborting")
         print(e)
-        return
-    print(divider)
+        return 0
+    print(DIVIDER)
     return untracked
 
 
@@ -246,7 +265,7 @@ def clone_repo(url):
     if os.path.exists(REPO):
         delete_files([REPO])
     output = git_interface_call(clone_cmd, use_prefix=False)
-    print(divider)
+    print(DIVIDER)
     return output
 
 
@@ -259,7 +278,7 @@ def get_clashing_files():
     out = git_interface_call(cmd)
     output = out.split()
     if "error:" not in output:
-        print(f"Checkout succesful\n{divider}")
+        print(f"Checkout succesful\n{DIVIDER}")
         return None
     start_index = output.index(start_of_files_marker) + 1
     end_index = output.index(end_of_files_marker)
@@ -271,7 +290,7 @@ def get_clashing_files():
 def backup_old_files(files: list):
     print("Backing up...\n")
     if not files:
-        print(f"No Files to backup\n{divider}")
+        print(f"No Files to backup\n{DIVIDER}")
         return
     path = BACKUP_PATH
     try:
@@ -279,7 +298,7 @@ def backup_old_files(files: list):
     except Exception:
         print(f"folder already exists! \t \t \t {path}")
         path = f"{BACKUP_PATH}-{randint(1,99)}"
-        print(f"Creating backup folder at \t \t {path}\n{divider}")
+        print(f"Creating backup folder at \t \t {path}\n{DIVIDER}")
         os.mkdir(path)
     filenames = []
     for file in files:
@@ -288,7 +307,7 @@ def backup_old_files(files: list):
     for src, dst in zip(files, filenames):
         dst = f"{path}/{dst}"
         copy(src, dst)
-        print(f"Copied {src} \n\t to {dst} \n{divider}")
+        print(f"Copied {src} \n\t to {dst} \n{DIVIDER}")
 
 
 def main():
