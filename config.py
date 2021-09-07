@@ -44,10 +44,18 @@ def create_branch(changes: dict):
 
 
 def restore_backup(url):
+    """
+    input: url containing an old dot-config bare repo
+    result: the repo being reinstated in the curreent machine
+    TODO make it verify all system changes like PATH and such.
+    """
     clone_repo(url)
 
 
 def get_parser():
+    """
+    the default parser for this program, contains all the relevent  arguments and parameters.
+    """
     parser = argparse.ArgumentParser(
         description="""
         Manage dotfiles with a git bare repo and the help of this simple tool.
@@ -67,6 +75,9 @@ def get_parser():
 
 
 def conf():
+    """
+    main function, what gets called when you call it from the command line
+    """
     parser = get_parser()
     args = vars(parser.parse_args())
     if args['install']:
@@ -100,6 +111,9 @@ def conf():
 
 
 def checkout():
+    """
+    meta-function to safely stash old configs when restoring a config.
+    """
     clashes = get_clashing_files()
     if clashes:
         backup_old_files(clashes)
@@ -108,8 +122,12 @@ def checkout():
 
 
 def add_to_path(name):
+    """
+    this function should add the path to this script to PATH.
+    """
     print(f"Adding {name}() function to shell startup")
-    shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
+    #shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
+    path_modification = f"path+={SCRIPT_PATH}"
     supported_shells = ['zsh', 'bash', 'csh', 'ksh']
     supported = False
     for shell in supported_shells:
@@ -120,7 +138,7 @@ def add_to_path(name):
     if not supported:
         print("Shell not supported, defaulting to bash.\n")
         print("Or add the following to your shell's startup file manually:")
-        print(shell_func_raw)
+        print(path_modification)
         proceed = input(
             "Do you wish to append the above code to .bashrc? [y,N]: ")
         if proceed.lower() != 'y':
@@ -128,12 +146,16 @@ def add_to_path(name):
             exit()
     print(f"Adding to {rc_file}")
     f = open(rc_file, "a", )
-    f.write(shell_func_raw)
+    f.write(path_modification)
     f.close()
     print(DIVIDER)
 
 
 def print_tracked_files():
+    """
+    prints all tracked files
+    TODO add different behaviour for whole folders.
+    """
     files = ls_tree()
     print(f"{len(files)} files tracked:\n")
     for file in files:
@@ -142,12 +164,18 @@ def print_tracked_files():
 
 
 def open_editor(file_path, editor=EDITOR) -> None:
+    """
+    open the given file with the system editor, unless specified otherwise
+    """
     print(f"editing {file_path} with {editor}")
     time.sleep(1)
     os.system(editor+" "+file_path)
 
 
 def ls_tree(target='HEAD'):
+    """
+    get all the file paths (full path) in a nice format
+    """
     cmd = ['ls-tree',
            '-r',
            '--full-name',
@@ -160,6 +188,10 @@ def ls_tree(target='HEAD'):
 
 
 def find_files(partial_name):
+    """
+    finds all file paths contaning the given string
+    helper for teh edit function
+    """
     partial_name = partial_name.lower()
     tracked_files = ls_tree()
     found = {}
@@ -172,6 +204,9 @@ def find_files(partial_name):
 
 
 def option_picker(opts: dict):
+    """
+    general option picker to be used when having multi option to edit.
+    """
     if len(opts.keys()) == 1:
         print(f"1 result found: {opts[0]}")
         return opts[0]
@@ -190,6 +225,9 @@ def option_picker(opts: dict):
 
 
 def get_info():
+    """
+    gather all repo info and return it in a nice format.
+    """
     status = git_interface_call(['status'])
     branches = git_interface_call(['branch'])
     print(f"conf installed at {SCRIPT_PATH}\n")
@@ -200,6 +238,9 @@ def get_info():
 
 
 def delete_files(files: list):
+    """
+    delete files, with the option of confirming one by one, or accept all.
+    """
     print("Deleting files..")
     accepted_all = False
     for file in files:
@@ -221,6 +262,9 @@ def delete_files(files: list):
 
 
 def setup_bare_repo() -> str:
+    """
+    setup basic bare repo, only needs to be done once (unless you're redoing your repo).
+    """
     init = ['/usr/bin/git', 'init', '--bare', REPO]
     print("Setting up...")
     if os.path.exists(REPO):
@@ -231,6 +275,13 @@ def setup_bare_repo() -> str:
 
 
 def git_settings_change():
+    """
+    change the git seettings for the bare repo so that it doesnt
+    show untracked files and add the repo itself to gitignore to avoid
+    recursion-in-working-tree
+        (since working tree includes the ,cfg folder itself).
+    TODO fix up stout, stderr (standardize)
+    """
     print("Changing git settings.")
     set_untracked = ['config', '--local', 'status.showUntrackedFiles', 'no']
     untracked = git_interface_call(set_untracked)
@@ -247,6 +298,10 @@ def git_settings_change():
 
 
 def git_interface_call(cmd, use_prefix=True):
+    """
+    Bread and butter of this program, whenever you need  to call git (every time)
+    this handles it correctly.
+    """
     git_bare_prefix = ['/usr/bin/git',
                        f'--git-dir={REPO}',
                        f'--work-tree={HOME}']
@@ -256,6 +311,9 @@ def git_interface_call(cmd, use_prefix=True):
 
 
 def clone_repo(url):
+    """
+    clones a repo given a remote URL.
+    """
     print(f"Cloning {url}")
     clone_cmd = ['/usr/bin/git',
                  'clone',
@@ -270,6 +328,12 @@ def clone_repo(url):
 
 
 def get_clashing_files():
+    """
+    Part of the toolchain to not destroy old configs,
+    this function finds the clashes from the git error meessage.
+    TODO makee it  more robust at detecting them, maybe using ls-tree
+        insteead of the error message?
+    """
     cmd = ['checkout']
     # Adjust these if it captures the files wrong, kinda hackey but
     # eh, for now there are more important features
@@ -288,6 +352,11 @@ def get_clashing_files():
 
 
 def backup_old_files(files: list):
+    """
+
+    Part of the toolchain to not destroy old configs,
+    this uses the clashhes found before, and stashes them.
+    """
     print("Backing up...\n")
     if not files:
         print(f"No Files to backup\n{DIVIDER}")
@@ -311,6 +380,9 @@ def backup_old_files(files: list):
 
 
 def main():
+    """
+    main
+    """
     conf()
 
 
