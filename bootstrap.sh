@@ -81,5 +81,5 @@ clone_repo "$url" "$repo_dir"
 symlink_bin "$bin_dir"
 echo "Bootstrap succesful"
 echo "Runing first config run to append path"
-python "${bin_dir}config" --add-to-path && exit 0
+python "${bin_dir}config" --add-to-path "$bin_dir" && exit 0
 echo "Error adding to path, check manually" && exit 1

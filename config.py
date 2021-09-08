@@ -70,7 +70,7 @@ def get_parser():
     parser.add_argument('--show-tracked-files', '-f', action="store_true")
     parser.add_argument('--edit-file', '-e', nargs=argparse.REMAINDER)
     parser.add_argument('--apply-changes', '-a', action='store_true')
-    parser.add_argument('--add-to-path', action="store_true")
+    parser.add_argument('--add-to-path', nargs=1)
     parser.add_argument('--clone-and-checkout', '-c', nargs=1)
     parser.add_argument('--dev-test', action="store_true")
     return parser
@@ -90,11 +90,8 @@ def conf():
     """
     parser = get_parser()
     args = vars(parser.parse_args())
-    if args['add-to-path']:
-        add_to_path()
-    if args['install']:
-        if "list" in str(type(args['install'])):
-            args['install'] = args['install'][0]
+    if args['add_to_path']:
+        add_to_path(args['add_to_path'][0])
     if args['info']:
         get_info()
     if args['init']:
@@ -132,13 +129,13 @@ def checkout():
         get_clashing_files()
 
 
-def add_to_path():
+def add_to_path(bin_path):
     """
     this function should add the path to this script to PATH.
     """
     print(f"Adding {HOME}/.local/bin to path")
     # shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
-    path_modification = f"path+={SCRIPT_PATH}"
+    path_modification = f"path+={bin_path}"
     supported_shells = ['zsh', 'bash', 'csh', 'ksh']
     supported = False
     for shell in supported_shells:
