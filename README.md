@@ -1,4 +1,6 @@
 # dot config
+# This is a WIP, somee things don't yet work
+For a semi Working version, the dev branch is better.
 
 A python wrapper to manage my git bare repository to manage all settings easily
 
