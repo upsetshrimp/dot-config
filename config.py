@@ -145,9 +145,8 @@ def add_to_path(name):
             print("Aborting...")
             exit()
     print(f"Adding to {rc_file}")
-    f = open(rc_file, "a", )
-    f.write(path_modification)
-    f.close()
+    with open(rc_file, "a", ENCODING) as rc_file:
+        rc_file.write(path_modification)
     print(DIVIDER)
 
 
@@ -163,12 +162,13 @@ def print_tracked_files():
     print(DIVIDER)
 
 
-def open_editor(file_path, editor=EDITOR) -> None:
+def open_editor(file_path, editor=EDITOR, sleep_time=1) -> None:
     """
     open the given file with the system editor, unless specified otherwise
+    sleep time can be passed as 0 for use with dmenu scripts for example.
     """
     print(f"editing {file_path} with {editor}")
-    time.sleep(1)
+    time.sleep(sleep_time)
     os.system(editor+" "+file_path)
 
 
@@ -244,21 +244,35 @@ def delete_files(files: list):
     print("Deleting files..")
     accepted_all = False
     for file in files:
-        rm = ['rm', '-rfv', file]
+        rm_command = ['rm', '-rfv', file]
         if not accepted_all:
             confirm = input(
                 f'Are you sure you want to delete {file}? (y,N,a):')
             confirm = confirm.lower()
             if confirm == 'y':
-                subprocess.run(rm)
+                _sp_try_block(rm_command, "rm")
             elif confirm == 'a':
                 accepted_all = True
-                subprocess.run(rm)
+                _sp_try_block(rm_command, "rm")
             else:
                 print("Aborting...")
-                exit()
+                sys.exit()
         else:
-            subprocess.run(rm)
+            _sp_try_block(rm_command, "rm")
+
+
+def _sp_try_block(cmd, cmd_name):
+    """
+    helper function for the delete_files function, to clean up the try block
+    for each subprocess call.
+    in the future this is gonna be for all sp calls, thats why it's decoupled.
+    """
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as exc:
+        print(f"{cmd_name} failed! printing exception and aborting...")
+        print(exc)
+        sys.exit()
 
 
 def setup_bare_repo() -> str:
@@ -286,12 +300,11 @@ def git_settings_change():
     set_untracked = ['config', '--local', 'status.showUntrackedFiles', 'no']
     untracked = git_interface_call(set_untracked)
     try:
-        f = open(f'{REPO}.gitignore', "a", ENCODING)
-        f.write(".cfg\n")
-        f.close()
-    except Exception as e:
+        with open(f'{REPO}.gitignore', "a", ENCODING) as gitignore:
+            gitignore.write(".cfg\n")
+    except Exception as exc:
         print("Couldn't add to gitignore... aborting")
-        print(e)
+        print(exc)
         return 0
     print(DIVIDER)
     return untracked
@@ -307,7 +320,7 @@ def git_interface_call(cmd, use_prefix=True):
                        f'--work-tree={HOME}']
     cmd = git_bare_prefix + cmd if use_prefix else cmd
     out = subprocess.run(cmd, stdout=PIPE, stderr=subprocess.STDOUT).stdout
-    return out.decode("utf-8")
+    return out.decode(ENCODING)
 
 
 def clone_repo(url):
@@ -364,7 +377,7 @@ def backup_old_files(files: list):
     path = BACKUP_PATH
     try:
         os.mkdir(path)
-    except Exception:
+    except OSError:
         print(f"folder already exists! \t \t \t {path}")
         path = f"{BACKUP_PATH}-{randint(1,99)}"
         print(f"Creating backup folder at \t \t {path}\n{DIVIDER}")
