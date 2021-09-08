@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 import argparse
 import subprocess
+from subprocess import PIPE
 import os
 import sys
 import time
-from subprocess import PIPE
 from shutil import copy
 from random import randint
+from inspect import currentframe
+from classes import bcolors
 
 # TODO:
 #
@@ -68,10 +70,18 @@ def get_parser():
     parser.add_argument('--show-tracked-files', '-f', action="store_true")
     parser.add_argument('--edit-file', '-e', nargs=argparse.REMAINDER)
     parser.add_argument('--apply-changes', '-a', action='store_true')
-    parser.add_argument('--install', nargs=1)
+    parser.add_argument('--add-to-path', action="store_true")
     parser.add_argument('--clone-and-checkout', '-c', nargs=1)
     parser.add_argument('--dev-test', action="store_true")
     return parser
+
+
+def _do_nothing():
+    line = f"{bcolors.FAIL}{bcolors.BOLD}{currentframe().f_back.f_lineno}{bcolors.ENDC}"
+    print("this does nothing")
+    print(f"change that at line {line}")
+    print("Exiting...")
+    sys.exit()
 
 
 def conf():
@@ -80,10 +90,11 @@ def conf():
     """
     parser = get_parser()
     args = vars(parser.parse_args())
+    if args['add-to-path']:
+        add_to_path()
     if args['install']:
         if "list" in str(type(args['install'])):
             args['install'] = args['install'][0]
-        add_to_path(args['install'])
     if args['info']:
         get_info()
     if args['init']:
@@ -102,7 +113,7 @@ def conf():
             print("TODO")
     if args["dev_test"]:
         # Only here for testing new functions quickly
-        print("This does nothing... if you want it to, edit this code here")
+        _do_nothing()
     if args["clone_and_checkout"]:
         git_url = args["clone_and_checkout"][0]
         clone_repo(git_url)
@@ -121,12 +132,12 @@ def checkout():
         get_clashing_files()
 
 
-def add_to_path(name):
+def add_to_path():
     """
     this function should add the path to this script to PATH.
     """
-    print(f"Adding {name}() function to shell startup")
-    #shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
+    print(f"Adding {HOME}/.local/bin to path")
+    # shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
     path_modification = f"path+={SCRIPT_PATH}"
     supported_shells = ['zsh', 'bash', 'csh', 'ksh']
     supported = False
@@ -143,7 +154,7 @@ def add_to_path(name):
             "Do you wish to append the above code to .bashrc? [y,N]: ")
         if proceed.lower() != 'y':
             print("Aborting...")
-            exit()
+            sys.exit()
     print(f"Adding to {rc_file}")
     with open(rc_file, "a", ENCODING) as rc_file:
         rc_file.write(path_modification)
