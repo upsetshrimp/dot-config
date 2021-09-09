@@ -40,7 +40,7 @@ symlink_bin(){
         bin_dir="$1"
     fi
     echo "Creating symlink to bin folder: ${bin_dir}"
-    ln -s ${repo_dir}/config.py ${bin_dir}/config && return 0
+    ln -s ${repo_dir}config.py ${bin_dir}config && return 0
 }
 
 verify_dependencies(){
@@ -65,16 +65,8 @@ set_dirs(){
 parse_args(){
     # TODO make this not suck, but good 'nuf for v0.01
     if [ $# -eq 0 ]; then
-        echo -n "No directory arguments passed, use default arguments? [Y/n]: " && read use_default
-        #printf "%b\n" "${default_repo_dir}" "${defailt_bin_dir}"
-        if [[ "$use_default" == "y" ]] || [ -z "$use_default" ]; then
-            echo "Using defaults"
-            set_dirs
-        else
-            echo "Aborting..."
-            exit 1
-        fi
-
+        echo -n "No directory arguments passed, using defaults"
+        set_dirs
     elif [ $# -ne 2 ]; then
         echo "Invalid number of arguments!"
         echo "Usage: "
