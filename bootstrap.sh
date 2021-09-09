@@ -65,7 +65,7 @@ set_dirs(){
 parse_args(){
     # TODO make this not suck, but good 'nuf for v0.01
     if [ $# -eq 0 ]; then
-        echo -n "No directory arguments passed, using defaults"
+        echo "No directory arguments passed, using defaults"
         set_dirs
     elif [ $# -ne 2 ]; then
         echo "Invalid number of arguments!"

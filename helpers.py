@@ -192,6 +192,8 @@ def get_tracked_files() -> str:
     TODO add different behaviour for whole folders.
     """
     files = ls_tree()
+    if not files:
+        return "No tracked files...  add some!"
     files = color_filenames(files)
     formatted_out = DIVIDER + '\n'
     formatted_out += f"{len(files)} files tracked:\n"
@@ -236,11 +238,13 @@ def ls_tree(target='HEAD') -> list:
            '--name-status',
            target]
     out = git_interface_call(cmd).split()
+    for line in out:
+        if 'error' in line.lower():
+            return []
     files = [f'{HOME}/{relative_path}' for relative_path in out]
     if not files:
         return ['No tracked files.. add some!']
     return files
-
 
 
 def find_files(partial_name) -> dict:
