@@ -3,6 +3,10 @@
 #                      V0.01, meant to install dot-config                                                                       #
 ###############################################################################
 
+# TODO
+# FIX BROKEN LOGIC, url is written as if it's for the dotfiles repo
+# but it should be for  the dot config
+# minor fix - just set a static url, and change argparse logic EZZ
 set -eo pipefail
 
 default_repo_dir=~/scripts/dot-config/
@@ -12,6 +16,11 @@ repo_dir=""
 bin_dir=""
 url=""
 clone_repo(){
+    if [ -z "$1" ]; then
+        echo "no repo url provided, skipping clone step"
+        echo "Use the config tool to initialize your repo.."
+        return 0
+    fi
     if [ -z "$2" ]; then
         echo "no repo dir supplied, defaulting to $default_repo_dir"
         echo "If you see thhis error, there's a problem in the code"
@@ -19,7 +28,7 @@ clone_repo(){
         repo_dir="$2"
     fi
     echo "Cloning repo into $repo_dir"
-    git clone "$1" "$2"
+    git clone "$1" "$2" && return 0
 }
 
 symlink_bin(){
@@ -30,7 +39,7 @@ symlink_bin(){
         bin_dir="$1"
     fi
     echo "Creating symlink to bin folder: ${bin_dir}"
-    ln -s ${repo_dir}/config.py ${bin_dir}/config
+    ln -s ${repo_dir}/config.py ${bin_dir}/config && return 0
 }
 
 verify_dependencies(){
@@ -54,7 +63,8 @@ set_dirs(){
 
 parse_args(){
     if [ $# -eq 1 ]; then
-        echo -e "No directory arguments passed, use default arguments? [Y/n]" && read use_default
+        url="$1"
+        echo -n "No directory arguments passed, use default arguments? [Y/n]: " && read use_default
         #printf "%b\n" "${default_repo_dir}" "${defailt_bin_dir}"
         if [[ "$use_default" == "y" ]] || [ -z "$use_default" ]; then
             echo "Using defaults"
@@ -68,7 +78,7 @@ parse_args(){
         # TODO make this not suck, but good 'nuf for v0.01
         echo "Invalid number of arguments!"
         echo "Usage: "
-        echo "bootstrap url repo_dir bin_dir"
+        echo "bootstrap url *repo_dir *bin_dir"
         exit 1
     else
         echo ""
@@ -81,5 +91,5 @@ clone_repo "$url" "$repo_dir"
 symlink_bin "$bin_dir"
 echo "Bootstrap succesful"
 echo "Runing first config run to append path"
-python "${bin_dir}config" --add-to-path "$bin_dir" && exit 0
+python "${bin_dir}config" --add-to-path "${bin_dir}" && exit 0
 echo "Error adding to path, check manually" && exit 1
