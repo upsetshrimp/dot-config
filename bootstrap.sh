@@ -14,7 +14,9 @@ default_bin_dir=~/.local/bin/
 
 repo_dir=""
 bin_dir=""
-url=""
+branch="main"
+url="https://raw.githubusercontent.com/upsetshrimp/dot-config/${branch}/bootstrap.sh"
+
 clone_repo(){
     if [ -z "$1" ]; then
         echo "no repo url provided, skipping clone step"
@@ -62,8 +64,8 @@ set_dirs(){
 }
 
 parse_args(){
-    if [ $# -eq 1 ]; then
-        url="$1"
+    # TODO make this not suck, but good 'nuf for v0.01
+    if [ $# -eq 0 ]; then
         echo -n "No directory arguments passed, use default arguments? [Y/n]: " && read use_default
         #printf "%b\n" "${default_repo_dir}" "${defailt_bin_dir}"
         if [[ "$use_default" == "y" ]] || [ -z "$use_default" ]; then
@@ -74,19 +76,17 @@ parse_args(){
             exit 1
         fi
 
-    elif [ $# -ne 3 ]; then
-        # TODO make this not suck, but good 'nuf for v0.01
+    elif [ $# -ne 2 ]; then
         echo "Invalid number of arguments!"
         echo "Usage: "
-        echo "bootstrap url *repo_dir *bin_dir"
+        echo "bootstrap *repo_dir *bin_dir"
         exit 1
     else
-        echo ""
-        url="$1"
-        set_dirs "$2" "$3"
+        set_dirs "$1" "$2"
     fi
 }
 parse_args "$@"
+
 clone_repo "$url" "$repo_dir"
 symlink_bin "$bin_dir"
 echo "Bootstrap succesful"
