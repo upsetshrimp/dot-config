@@ -1,7 +1,11 @@
 # dot config
+<<<<<<< HEAD
 # This is a WIP, somee things don't yet work
 For a semi Working version, the dev branch is better.
 
+=======
+# This is a work in progress, some things just plain don't work yet
+>>>>>>> dev
 A python wrapper to manage my git bare repository to manage all settings easily
 
 inspired by this: https://www.atlassian.com/git/tutorials/dotfiles
