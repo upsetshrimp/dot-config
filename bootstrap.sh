@@ -15,8 +15,7 @@ default_bin_dir=~/.local/bin/
 repo_dir=""
 bin_dir=""
 branch="main"
-url="https://raw.githubusercontent.com/upsetshrimp/dot-config/${branch}/bootstrap.sh"
-
+url="git@github.com:upsetshrimp/dot-config.git"
 clone_repo(){
     if [ -z "$1" ]; then
         echo "no repo url provided, skipping clone step"
