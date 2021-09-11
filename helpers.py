@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+dot-config
+Author
+"""
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, REMAINDER
 import subprocess
 from subprocess import PIPE
@@ -8,8 +12,9 @@ import sys
 import time
 from shutil import copy
 from random import randint
-from inspect import currentframe
+import inspect
 from classes import bcolors
+
 
 # TODO:
 #
@@ -38,8 +43,13 @@ def config() -> None:
     main function, what gets called when you call it from the command line
     TODO make this return logging  info, and add a logger.
     """
-    parser = get_parser()
-    args = vars(parser.parse_args())
+    if git_mode():
+        out = git_interface_call(sys.argv[1:])
+        print(out)
+        sys.exit()
+    else:
+        parser = get_parser()
+        args = vars(parser.parse_args())
     # Order matters here! pay attention!!
     if args['init']:
         setup_bare_repo()
@@ -50,6 +60,7 @@ def config() -> None:
         add_to_path(args['add_to_path'][0])
     # ========= DEV TEST CODE ================= #
     if args["dev_test"]:
+        print(args)
         _do_nothing()
     # ========= END DEV TEST CODE ============= #
     if not repo_exists():
@@ -72,15 +83,24 @@ def config() -> None:
             print("TODO")
 
 
-def find_variants() -> dict:
+def git_mode() -> bool:
+    """
+    check if the first argumment is a git interface call
+    and bypassing argparse if wee are
+    it's hackey but hey it works
+    """
+    first_arg = sys.argv[1]
+    if first_arg[0] == '-':
+        return False
+    return True
+
+
+def find_variants() -> None:
     """
     comb through monolith dotfile and find optional bits
     optional bits will be comments that will later be uncommented per request
     """
-    variants: dict['str']
-    variants = {}
     print("TODO")
-    return variants
 
 
 def create_branch(changes: dict) -> None:
@@ -102,7 +122,8 @@ def restore_backup(url) -> None:
 
 def get_parser() -> Parser:
     """
-    the default parser for this program, contains all the relevent  arguments and parameters.
+    the default parser for this program, contains all the relevent  arguments
+    and parameters.
     """
     parser = ArgumentParser(
         description="""
@@ -123,7 +144,13 @@ def get_parser() -> Parser:
 
 
 def _do_nothing() -> None:
-    line = f"{bcolors.FAIL}{bcolors.BOLD}{currentframe().f_back.f_lineno}{bcolors.ENDC}"
+    """
+    Does nothing
+    """
+    frame = inspect.stack()[1][0]
+    info = inspect.getframeinfo(frame)
+    line = str(info.lineno)
+    line = f"{bcolors.FAIL}{bcolors.BOLD}{line}{bcolors.ENDC}"
     print("this does nothing")
     print(f"change that at line {line}")
     print("Exiting...")
@@ -157,12 +184,11 @@ def clone_and_checkout(url: str) -> str:
     return out
 
 
-def add_to_path(bin_path) -> None:
+def add_to_path(bin_path: str) -> None:
     """
     this function should add the path to this script to PATH.
     """
     print(f"Adding {HOME}/.local/bin to path")
-    # shell_func_raw = f"{name}(){LCB}\n    python {SCRIPT_PATH} \"$@\"\n{RCB}\n"
     path_modification = f"path+={bin_path}"
     supported_shells = ['zsh', 'bash', 'csh', 'ksh']
     supported = False
@@ -198,7 +224,7 @@ def get_tracked_files() -> str:
     formatted_out = DIVIDER + '\n'
     formatted_out += f"{len(files)} files tracked:\n"
     formatted_out += '\n'.join(files)
-    formatted_out += '\n'+DIVIDER
+    formatted_out += DIVIDER
     return formatted_out
 
 
@@ -212,7 +238,8 @@ def color_filenames(files: list) -> list['str']:
     for path in files:
         index = path.rfind('/')
         filename = path[index+1:]
-        path = f"{path[:index+1]}{bcolors.OKBLUE}{bcolors.BOLD}{filename}{bcolors.ENDC}"
+        path = f"{path[:index+1]}{bcolors.OKBLUE}{bcolors.BOLD}"
+        path += f"{filename}{bcolors.ENDC}"
         colorized_paths.append(path)
     return colorized_paths
 
@@ -284,17 +311,13 @@ def option_picker(opts: dict) -> str:
     return opts[int(choice)]
 
 
-def get_info():
+def get_info() -> str:
     """
     gather all repo info and return it in a nice format.
     """
-    status = git_interface_call(['status'])
+    status = replace_git_in_str(git_interface_call(['status']))
     branches = git_interface_call(['branch'])
-    print(f"conf installed at {SCRIPT_PATH}\n")
-    print(status)
-    print(DIVIDER)
-    print(f"Available Branches:\n{branches}")
-    info = f"conf installed at {SCRIPT_PATH}\n"
+    info = f"dot-config installed at {SCRIPT_PATH}\n"
     info += get_tracked_files() + '\n'
     info += status
     info += DIVIDER + '\n'
@@ -302,7 +325,7 @@ def get_info():
     return info
 
 
-def delete_files(files: list):
+def delete_files(files: list) -> str:
     """
     delete files, with the option of confirming one by one, or accept all.
     """
@@ -315,34 +338,39 @@ def delete_files(files: list):
                 f'Are you sure you want to delete {file}? (y,N,a):')
             confirm = confirm.lower()
             if confirm == 'y':
-                _sp_try_block(rm_command, "rm")
+                out = _sp_try_block(rm_command, "rm")
             elif confirm == 'a':
                 accepted_all = True
-                _sp_try_block(rm_command, "rm")
+                out = _sp_try_block(rm_command, "rm")
             else:
-                print("Aborting...")
-                sys.exit()
+                error_exit("Aborted by user")
         else:
-            _sp_try_block(rm_command, "rm")
+            out = _sp_try_block(rm_command, "rm")
+    return out
 
 
-def _sp_try_block(cmd, cmd_name):
+def _sp_try_block(cmd: list, cmd_name: str) -> str:
     """
     helper function for the delete_files function, to clean up the try block
     for each subprocess call.
     in the future this is gonna be for all sp calls, thats why it's decoupled.
     """
     try:
-        subprocess.run(cmd, check=True)
+        out = subprocess.run(cmd,
+                             check=True,
+                             stdout=PIPE,
+                             stderr=subprocess.STDOUT)
+        return out.stdout.decode(ENCODING)
     except subprocess.CalledProcessError as exc:
-        print(f"{cmd_name} failed! printing exception and aborting...")
+        print(f"{cmd_name} \n\t failed! printing exception and aborting...")
         print(exc)
         sys.exit()
 
 
 def setup_bare_repo() -> str:
     """
-    setup basic bare repo, only needs to be done once (unless you're redoing your repo).
+    setup basic bare repo, only needs to be done once
+    (unless you're re-doing your repo).
     """
     init = ['/usr/bin/git', 'init', '--bare', REPO]
     print("Setting up...")
@@ -354,7 +382,7 @@ def setup_bare_repo() -> str:
     return out
 
 
-def git_global_config():
+def git_global_config() -> str:
     """
     change the git seettings for the bare repo so that it doesnt
     show untracked files and add the repo itself to gitignore to avoid
@@ -381,27 +409,26 @@ def git_global_config():
             else:
                 print("gitignore populated, skipping...")
     except Exception as exc:
-        print("Couldn't add to gitignore... aborting")
-        print(exc)
-        return 0
+        error_exit(f"writing to .gitignore\n{exc}")
     print(DIVIDER)
     return untracked
 
 
-def git_interface_call(cmd, use_prefix=True):
+def git_interface_call(cmd: list, use_prefix=True) -> str:
     """
-    Bread and butter of this program, whenever you need  to call git (every time)
+    Bread and butter of this program, whenever you need
+    to call git (every time)
     this handles it correctly.
     """
     git_bare_prefix = ['/usr/bin/git',
                        f'--git-dir={REPO}',
                        f'--work-tree={HOME}']
     cmd = git_bare_prefix + cmd if use_prefix else cmd
-    out = subprocess.run(cmd, stdout=PIPE, stderr=subprocess.STDOUT).stdout
-    return out.decode(ENCODING)
+    out = _sp_try_block(cmd, ' '.join(cmd))
+    return out
 
 
-def clone_repo(url: str):
+def clone_repo(url: str) -> str:
     """
     clones a repo given a remote URL.
     """
@@ -417,7 +444,7 @@ def clone_repo(url: str):
     return output
 
 
-def get_clashing_files():
+def get_clashing_files() -> list['str']:
     """
     Part of the toolchain to not destroy old configs,
     this function finds the clashes from the git error meessage.
@@ -433,7 +460,7 @@ def get_clashing_files():
     output = out.split()
     if "error:" not in output:
         print(f"Checkout succesful\n{DIVIDER}")
-        return None
+        return []
     start_index = output.index(start_of_files_marker) + 1
     end_index = output.index(end_of_files_marker)
     files = output[start_index:end_index]
@@ -441,7 +468,7 @@ def get_clashing_files():
     return files
 
 
-def backup_old_files(files: list):
+def backup_old_files(files: list) -> None:
     """
 
     Part of the toolchain to not destroy old configs,
@@ -467,6 +494,13 @@ def backup_old_files(files: list):
         dst = f"{path}/{dst}"
         copy(src, dst)
         print(f"Copied {src} \n\t to {dst} \n{DIVIDER}")
+
+
+def replace_git_in_str(text: str) -> str:
+    """
+    so the suggested commmands  make sense
+    """
+    return text.replace('git', 'config')
 
 
 def error_exit(error: str) -> None:
