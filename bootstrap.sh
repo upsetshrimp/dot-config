@@ -3,10 +3,6 @@
 #                      V0.01, meant to install dot-config                                                                       #
 ###############################################################################
 
-# TODO
-# FIX BROKEN LOGIC, url is written as if it's for the dotfiles repo
-# but it should be for  the dot config
-# minor fix - just set a static url, and change argparse logic EZZ
 set -eo pipefail
 
 default_repo_dir=~/scripts/dot-config/
@@ -16,31 +12,19 @@ repo_dir=""
 bin_dir=""
 branch="main"
 url="git@github.com:upsetshrimp/dot-config.git"
+
 clone_repo(){
     if [ -z "$1" ]; then
-        echo "no repo url provided, skipping clone step"
-        echo "Use the config tool to initialize your repo.."
-        return 0
+        echo "no repo url provided, Aborting!"
+        return 1
     fi
-    if [ -z "$2" ]; then
-        echo "no repo dir supplied, defaulting to $default_repo_dir"
-        echo "If you see thhis error, there's a problem in the code"
-    else
-        repo_dir="$2"
-    fi
-    echo "Cloning repo into $repo_dir"
+    echo "Cloning repo into $2"
     git clone "$1" "$2" && return 0
 }
 
 symlink_bin(){
-    if [ -z "$1" ]; then
-        echo "No alternate bin path provided, defaulting to $default_bin_dir"
-        echo "If you see thhis error, there's a problem in the code"
-    else
-        bin_dir="$1"
-    fi
     echo "Creating symlink to bin folder: ${bin_dir}"
-    ln -s ${repo_dir}config.py ${bin_dir}config && return 0
+    ln -s ${repo_dir}config.py ${bin_dir}config && return 0 || return 1
 }
 
 verify_dependencies(){
